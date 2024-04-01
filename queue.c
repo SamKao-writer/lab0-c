@@ -61,6 +61,8 @@ static struct list_head *merge_sort(struct list_head *head)
 struct list_head *q_new()
 {
     struct list_head *q = malloc(sizeof(struct list_head) * 1);
+    if (!q)
+        return NULL;
     INIT_LIST_HEAD(q);
     return q;
 }
@@ -68,12 +70,14 @@ struct list_head *q_new()
 /* Free all storage used by queue */
 void q_free(struct list_head *head)
 {
+    if (!head)
+        return;
     struct list_head *node;
     struct list_head *safe;
     list_for_each_safe (node, safe, head) {
         element_t *now = list_entry(node, element_t, list);
-        free(now->value);
-        free(now);
+        list_del(node);
+        q_release_element(now);
     }
     free(head);
 }
@@ -86,7 +90,12 @@ bool q_insert_head(struct list_head *head, char *s)
     element_t *new = malloc(sizeof(element_t) * 1);
     if (!new)
         return false;
-    new->value = strdup(s);
+    // INIT_LIST_HEAD(&new->list);
+    new->value = test_strdup(s);
+    if (!new->value) {
+        free(new);
+        return false;
+    }
     list_add(&new->list, head);
     return true;
 }
@@ -99,7 +108,12 @@ bool q_insert_tail(struct list_head *head, char *s)
     element_t *new = malloc(sizeof(element_t) * 1);
     if (!new)
         return false;
-    new->value = strdup(s);
+    // INIT_LIST_HEAD(&new->list);
+    new->value = test_strdup(s);
+    if (!new->value) {
+        free(new);
+        return false;
+    }
     list_add_tail(&new->list, head);
     return true;
 }
@@ -182,6 +196,7 @@ bool q_delete_dup(struct list_head *head)
             dup = true;
         } else if (dup) {
             list_del(&entry->list);
+            q_release_element(entry);
             dup = false;
         }
     }
