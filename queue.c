@@ -11,6 +11,52 @@
  */
 
 
+static struct list_head *merge_two_lists(struct list_head *left,
+                                         struct list_head *right);
+static struct list_head *merge_sort(struct list_head *head);
+
+/* Merge two lists. */
+static struct list_head *merge_two_lists(struct list_head *left,
+                                         struct list_head *right)
+{
+    struct list_head *head = NULL, **indirect = &head, **node;
+    for (; left && right; *node = (*node)->next) {
+        element_t *left_ele = list_entry(left, element_t, list);
+        element_t *right_ele = list_entry(right, element_t, list);
+        node =
+            (strcmp(left_ele->value, right_ele->value) <= 0) ? &left : &right;
+        *indirect = *node;
+        indirect = &(*indirect)->next;
+    }
+
+    *indirect = (struct list_head *) ((unsigned long long) left |
+                                      (unsigned long long) right);
+    return head;
+}
+
+static struct list_head *merge_sort(struct list_head *head)
+{
+    if (!head->next)
+        return head;
+
+    /* Using fast and slow pointer to find the middle node of the list. */
+    struct list_head *slow = head;
+    for (struct list_head *fast = slow->next; fast && fast->next;
+         fast = fast->next->next)
+        slow = slow->next;
+
+    /* Get the middle node and cut the list into left and right part. */
+    struct list_head *middle = slow->next;
+    slow->next = NULL;
+
+    /* Recursive call */
+    struct list_head *left = merge_sort(head);
+    struct list_head *right = merge_sort(middle);
+
+    /* merge left and right lists. */
+    return merge_two_lists(left, right);
+}
+
 /* Create an empty queue */
 struct list_head *q_new()
 {
@@ -188,7 +234,25 @@ void q_reverseK(struct list_head *head, int k)
 }
 
 /* Sort elements of queue in ascending/descending order */
-void q_sort(struct list_head *head, bool descend) {}
+void q_sort(struct list_head *head, bool descend)
+{
+    /* Use recursive merge sort to complete sorting. */
+    /* For base case */
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+
+    /* Cut the next pointer to head of last node. */
+    head->prev->next = NULL;
+    head->next = merge_sort(head->next);
+
+    /* Traverse the list and change the prev pointer of each node. */
+    struct list_head *curr = head, *next = head->next;
+    for (; curr && next; curr = next, next = next->next)
+        next->prev = curr;
+
+    curr->next = head;
+    head->prev = curr;
+}
 
 /* Remove every node which has a node with a strictly less value anywhere to
  * the right side of it */
