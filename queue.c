@@ -140,13 +140,18 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
     if (!head || list_empty(head))
         return NULL;
-    element_t *removed = list_entry(head->prev, element_t, list);
-    if (sp && bufsize > 0) {
-        strncpy(sp, removed->value, bufsize - 1);
-        sp[bufsize - 1] = '\0';
-    }
-    list_del(head->prev);
-    return removed;
+    else if (list_is_singular(head))
+        return q_remove_head(head, sp, bufsize);
+    return q_remove_head(head->prev->prev, sp, bufsize);
+    // if (!head || list_empty(head))
+    //     return NULL;
+    // // element_t *removed = list_entry(head->prev, element_t, list);
+    // // if (sp && bufsize > 0) {
+    // //     strncpy(sp, removed->value, bufsize - 1);
+    // //     sp[bufsize - 1] = '\0';
+    // // }
+    // // list_del(head->prev);
+    // // return removed;
 }
 
 /* Return number of elements in queue */
